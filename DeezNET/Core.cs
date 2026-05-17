@@ -14,6 +14,12 @@ public class DeezerClient
         _clientHandler = new() { CookieContainer = new() };
         _client = new HttpClient(_clientHandler);
         _client.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.5");
+        // A missing User-Agent is a textbook abuse-detection tell, especially
+        // on Akamai-fronted endpoints. Match a current Edge build so requests
+        // look like a normal desktop browser session.
+        _client.DefaultRequestHeaders.UserAgent.ParseAdd(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0");
 
         _gwApi = new(_client, _arl);
         _publicApi = new(_client);
@@ -36,6 +42,21 @@ public class DeezerClient
 
         _arl = arl;
         _gwApi._arl = arl;
+
+        // Seed the cookie jar with the ARL so every subsequent request
+        // carries it automatically. Previously only deezer.getUserData
+        // attached `Cookie: arl=...` manually; every other gw-light call
+        // relied on the response cookie being kept in the jar by the
+        // handler. If any response ever cleared the arl cookie (Set-Cookie
+        // max-age=0, expiry, error path) subsequent calls silently went
+        // anonymous and Deezer would mint a fresh anonymous sid, kicking
+        // the user out of their session. Re-asserting it on every SetARL
+        // overwrites any cleared state.
+        if (!string.IsNullOrWhiteSpace(arl))
+        {
+            _clientHandler.CookieContainer.Add(new System.Net.Cookie("arl", arl, "/", ".deezer.com"));
+        }
+
         await _gwApi.SetToken();
     }
 

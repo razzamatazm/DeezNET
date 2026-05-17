@@ -267,8 +267,10 @@ public class GWApi
             Content = stringContent
         };
 
-        if (needsArl)
-            request.Headers.Add("Cookie", "arl=" + _arl);
+        // The ARL is seeded into the shared CookieContainer by DeezerClient.SetARL,
+        // so HttpClientHandler attaches it automatically to every request. The
+        // needsArl parameter is retained for API compatibility and as a hint to
+        // the empty-ARL throw guard above.
 
         HttpResponseMessage response = await _client.SendAsync(request, token);
 
