@@ -217,7 +217,12 @@ public class Downloader
         JToken page = await _gw.GetTrackPage(trackId, token);
         TrackUrls urls = await GetTrackUrl(page["DATA"]!["TRACK_TOKEN"]!.ToString(), bitrate, token);
 
-        Uri? encryptedUri = urls.Data.FirstOrDefault()?.Media.FirstOrDefault()?.Sources.FirstOrDefault()?.Url;
+        // Null-safe the whole chain: Deezer's get_url returns no `data`
+        // field on certain error responses (stale license_token, geo block,
+        // entitlement mismatch). Previously the un-null-safe `.FirstOrDefault()`
+        // on a null source threw ArgumentNullException, bypassing the
+        // NoSourcesAvailableException path that consumers retry on.
+        Uri? encryptedUri = urls?.Data?.FirstOrDefault()?.Media?.FirstOrDefault()?.Sources?.FirstOrDefault()?.Url;
         if (encryptedUri == null)
         {
             if (fallback != null)
