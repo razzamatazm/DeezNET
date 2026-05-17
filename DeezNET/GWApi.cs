@@ -22,7 +22,7 @@ public class GWApi
     private readonly HttpClient _client;
     private JToken? _activeUserData;
 
-    internal async Task SetToken(CancellationToken token = default)
+    public async Task SetToken(CancellationToken token = default)
     {
         if (string.IsNullOrEmpty(_arl))
             return;
